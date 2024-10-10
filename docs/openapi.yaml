@@ -1,0 +1,176 @@
+openapi: 3.0.0
+info:
+  title: Task Manager API
+  version: "1.0.0"
+  description: API для управления задачами
+
+servers:
+  - url: http://127.0.0.1:8000
+    description: Локальный сервер
+
+paths:
+  /tasks:
+    get:
+      summary: Получить список задач
+      description: Возвращает все существующие задачи
+      operationId: getTasks
+      tags:
+        - Задачи
+      responses:
+        '200':
+          description: Список задач
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+    post:
+      summary: Создать новую задачу
+      description: Добавляет новую задачу
+      operationId: createTask
+      tags:
+        - Задачи
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+      responses:
+        '201':
+          description: Задача создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+
+  /tasks/{task_id}:
+    get:
+      summary: Получить задачу по ID
+      description: Возвращает задачу по её идентификатору
+      operationId: getTaskById
+      tags:
+        - Задачи
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Задача найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: Задача не найдена
+
+    put:
+      summary: Обновить задачу по ID
+      description: Обновляет существующую задачу
+      operationId: updateTask
+      tags:
+        - Задачи
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+      responses:
+        '200':
+          description: Задача обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: Задача не найдена
+
+    delete:
+      summary: Удалить задачу по ID
+      description: Удаляет существующую задачу
+      operationId: deleteTask
+      tags:
+        - Задачи
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Задача удалена
+        '404':
+          description: Задача не найдена
+
+components:
+  schemas:
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Уникальный идентификатор задачи
+        title:
+          type: string
+          description: Название задачи
+        description:
+          type: string
+          description: Описание задачи
+        status:
+          type: string
+          description: Статус задачи (например, 'в процессе', 'завершено')
+      example:
+        id: 1
+        title: "Изучить FastAPI"
+        description: "Создать простое приложение на FastAPI"
+        status: "в процессе"
+
+    TaskCreate:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Название задачи
+        description:
+          type: string
+          description: Описание задачи
+        status:
+          type: string
+          description: Статус задачи
+      required:
+        - title
+        - description
+        - status
+      example:
+        title: "Изучить FastAPI"
+        description: "Создать простое приложение на FastAPI"
+        status: "в процессе"
+
+    TaskUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Название задачи
+        description:
+          type: string
+          description: Описание задачи
+        status:
+          type: string
+          description: Статус задачи
+      example:
+        title: "Изучить FastAPI"
+        description: "Создать простое приложение на FastAPI"
+        status: "завершено"
