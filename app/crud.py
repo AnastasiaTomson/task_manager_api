@@ -3,11 +3,13 @@ from app import models, schemas
 
 
 def get_tasks(db: Session):
-    return db.query(models.Task).all()
+    tasks = db.query(models.Task).all()
+    return tasks
 
 
 def get_task(db: Session, task_id: int):
-    return db.query(models.Task).filter(models.Task.id == task_id).first()
+    task = db.query(models.Task).filter(models.Task.id == task_id).first()
+    return task
 
 
 def create_task(db: Session, task: schemas.TaskCreate):
