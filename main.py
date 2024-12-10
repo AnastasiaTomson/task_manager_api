@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.openapi.docs import get_swagger_ui_html
 from prometheus_client import Gauge, generate_latest
@@ -6,11 +8,15 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse, Response
 import yaml
 
-from app import models
-from app.database import engine, SessionLocal
-from app.models import Task
-from app.routers.tasks import router
+import models
+import crud
+import schemas
+from database import engine
+from models import Task
 
+from sqlalchemy.orm import Session
+from fastapi import Depends, HTTPException, APIRouter
+from database import SessionLocal
 # Создание таблиц
 models.Base.metadata.create_all(bind=engine)
 
@@ -26,6 +32,16 @@ app = FastAPI(
     docs_url="/docs",  # Оставляем путь для Swagger UI
     openapi_url=None  # Отключаем стандартный JSON OpenAPI
 )
+
+# Настройка логирования
+logging.basicConfig(
+    filename='app.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+logger = logging.getLogger(__name__)
+
 
 # Создаем инструментатор
 instrumentator = Instrumentator()
@@ -71,6 +87,66 @@ app.add_middleware(MetricsMiddleware)
 
 # Добавляем кастомную метрику
 instrumentator.instrument(app).expose(app)
+
+router = APIRouter()
+
+
+# Получение сессии базы данных
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+# Эндпоинт для получения списка всех задач
+@router.get("", response_model=list[schemas.Task])
+def read_tasks(db: Session = Depends(get_db)):
+    tasks = crud.get_tasks(db)
+    logger.info("GET /tasks request received")
+    return tasks
+
+
+# Эндпоинт для получения задачи по ID
+@router.get("/{task_id}", response_model=schemas.Task)
+def read_task(task_id: int, db: Session = Depends(get_db)):
+    logger.info(f"GET /tasks/{task_id} request received")
+    task = crud.get_task(db, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Задача не найдена")
+    return task
+
+
+# Эндпоинт для создания новой задачи
+@router.post("", response_model=schemas.Task)
+async def create_task(task: schemas.TaskCreate, db: Session = Depends(get_db)):
+    logger.info("POST /tasks request received")
+    new_task = crud.create_task(db, task)
+    return new_task
+
+
+# Эндпоинт для обновления задачи
+@router.put("/{task_id}", response_model=schemas.Task)
+async def update_task(task_id: int, task: schemas.TaskCreate, db: Session = Depends(get_db)):
+    logger.info(f"PUT /tasks/{task_id} request received")
+    db_task = crud.get_task(db, task_id)
+    if db_task is None:
+        raise HTTPException(status_code=404, detail="Задача не найдена")
+    updated_task = crud.update_task(db, task_id, task)
+    return updated_task
+
+
+# Эндпоинт для удаления задачи
+@router.delete("/{task_id}")
+async def delete_task(task_id: int, db: Session = Depends(get_db)):
+    logger.info(f"DELETE /tasks/{task_id} request received")
+    db_task = crud.get_task(db, task_id)
+    if db_task is None:
+        raise HTTPException(status_code=404, detail="Задача не найдена")
+    crud.delete_task(db, task_id)
+    return {"detail": "Задача удалена"}
+
 
 app.include_router(router, prefix="/tasks", tags=["tasks"])
 

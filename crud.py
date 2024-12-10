@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
-from app import models, schemas
+import models
+import schemas
 
 
 def get_tasks(db: Session):
