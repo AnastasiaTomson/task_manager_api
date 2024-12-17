@@ -1,0 +1,37 @@
+name: CI/CD Task Manager
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build_and_deploy:
+    name: Build and Deploy Containers
+    runs-on: ubuntu-latest
+
+    steps:
+      # Проверяем репозиторий
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Устанавливаем Docker Compose
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
+
+      # Сборка контейнеров
+      - name: Build and Run Containers
+        run: |
+          docker-compose down
+          docker-compose up -d --build
+
+      # Проверяем запущенные контейнеры
+      - name: Verify Running Containers
+        run: docker ps
+
+      # Завершаем пайплайн
+      - name: Success Message
+        run: echo "Containers built and deployed successfully!"
