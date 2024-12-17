@@ -63,6 +63,20 @@ services:
     command:
       - -config.file=/etc/promtail/promtail-config.yaml
 
+  tempo:
+    image: grafana/tempo
+    container_name: tempo
+    ports:
+      - "4317:4317"
+      - "3200:3200"
+    networks:
+      - monitoring
+    restart: always
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    volumes:
+      - ./tempo.yaml:/etc/tempo.yaml
+      - ./tempo-data:/tmp/tempo
+
 networks:
   monitoring:
     driver: bridge
